@@ -202,13 +202,13 @@ const refreshAccessToken  = asyncHandler(async(req,res)=>{
         .status(200)
         .cookie("accessToken",accessToken,options)
         .cookie("refreshToken",refreshToken,options)
-        .json({
+        .json(
             new ApiResponse(
                 200,
                 { accessToken,refreshToken},
                 "Accessed token and refreshed"
             )
-        })
+        )
     } catch (error) {
         throw new ApiError(401, error?.message || "Invalid refresh Token")
     } 
@@ -218,7 +218,7 @@ const refreshAccessToken  = asyncHandler(async(req,res)=>{
 const passwordChange = asyncHandler( async(req,res)=>{
     const {oldPassword,newPassword} = req.body
 
-    const user = await User.findById(req.user?_id)
+    const user = await User.findById(req.user?._id)
     const isPasswordCorrect = await user.isPasswordCorrect(oldPassword)
 
     if(!isPasswordCorrect){
