@@ -246,7 +246,7 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
         throw new ApiError(400, "All Field are requied")
     }
 
-    const user = User.findByIdAndUpdate(req.user?._id,
+    const user = await User.findByIdAndUpdate(req.user?._id,
         {
             $set: {
                 fullName,
