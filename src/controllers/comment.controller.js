@@ -10,26 +10,60 @@ import { verifyVideo } from "./video.controller.js"
 
 const getVideoComments = asyncHandler(async (req, res) => {
     //TODO: get all comments for a video
-    try {
-        const { videoId } = req.params;
-        const { page = 1, limit = 10 } = req.query;
-        if (!videoId) {
-            throw new ApiError(400, "Video is not found!!")
-        }
     
-        const comment = await Comment.find({video: videoId})
-    
-        if (!comment) {
-            throw new ApiError(400, "Comment is not found with respective data.!!")
-        }
-    
-        return res.status(200).json(
-            new ApiResponse(200,comment,"All comment successfully fetch with current video")
-        )
-    } catch (error) {
-        throw new ApiError(500, "Error Occuered while getting comment of respective video.")    
+    const { videoId } = req.params;
+    const { page = 1, limit = 10 } = req.query;
+
+    if(!videoId){
+        throw new ApiError(404,"Please provide a valid video Id")
     }
-    
+
+    const getComment  = await Comment.aggregate([
+        {
+            $match:{
+                video:new mongoose.Types.ObjectId(videoId)
+            },
+        },
+        {
+            $lookup: {
+              from: "users",
+              localField: "owner",
+              foreignField: "_id",
+              as: "owners",
+            },
+          },
+          {
+            $lookup: {
+              from: "likes",
+              localField: "_id",
+              foreignField: "comment",
+              as: "likes",
+            },
+          },
+          {
+            $addFields: {
+              likesCount: {
+                $size: "$likes",
+              },
+              owner: {
+                // $arrayEleAt: ["$owners", 0],
+                //   alternative
+                  $first:"$owners",
+              },
+              isLiked: {
+                $cond: {
+                  if: {
+                    $in: [req.user?._id, "$likes.likedBy"],
+                  },
+                  then: true,
+                  else: false,
+                },
+              },
+            },
+          },
+]);
+
+
 
 })
 
@@ -40,13 +74,13 @@ const addComment = asyncHandler(async (req, res) => {
     //link to that
     //post the comment
     try {
-        const { content} = req.body;
-        const {videoId,UserId} = req.params;
+        const { videoId } = req.params;
+        const { content } = req.body;
         
-        const video =  verifyVideo(videoId);
+        const video = verifyVideo(videoId);
 
         if (!video) {
-            throw new ApiError(500," Video cannt be fetched while adding comment."
+            throw new ApiError(500, " Video cannt be fetched while adding comment."
             )
         }
 
@@ -56,9 +90,9 @@ const addComment = asyncHandler(async (req, res) => {
 
 
         const comment = await Comment.create({
-            content: content,
-            video: Video._id,
-            onwer: User._id
+            content,
+            video: videoId,
+            onwer: req.user?._id
         })
 
         return res.status(200).json(
@@ -74,26 +108,43 @@ const updateComment = asyncHandler(async (req, res) => {
     // TODO: update a comment
     try {
         const { commentId } = req.params;
-    
-        const comment = Comment.findByIdAndUpdate(commentId);
-    
-    
-        if (!comment) {
+
+        if (!commentId) {
             throw new ApiError(404, "CommentId is required")
         }
-    
+
         const { content } = req.body;
-    
+
         if (!content) {
+            throw new ApiError(404, "content is required in body")
+        }
+
+        if (!isValidObjectId(commentId)) {
+            throw new ApiError(400, "Invalid Video ID");
+        }
+
+        const getComment = await Comment.findById(commentId);
+
+        if (req.user?._id.toString() !== getComment?.owner.toString()) {
+            throw new ApiError(400, "User is not the owner of this comment");
+        }
+
+        const uploadComment = Comment.findByIdAndUpdate(commentId,
+            {
+                $set: {
+                    content: content
+                }
+            }
+            , { new: true });
+
+
+        if (!uploadComment) {
             throw new ApiError(404, "Error Occuered while content is required")
         }
-    
-        comment.content = content;
-    
-        const updatedComment = await comment.save();
-    
+
+
         return res.status(200).json(
-            new ApiResponse(200, updateComment, "Comment is updated successfully")
+            new ApiResponse(200, uploadComment, "Comment is updated successfully")
         )
     } catch (error) {
         throw new ApiError(500, "Comment is updated")
@@ -105,22 +156,31 @@ const updateComment = asyncHandler(async (req, res) => {
 const deleteComment = asyncHandler(async (req, res) => {
     // TODO: delete a comment
     try {
-        const {commentId} =  req.params;
-        const comment = Comment.findByIdAndUpdate(commentId);
-        if(!comment){
-            throw new ApiError(500,"Unable to fetech comment you want to delete")
+        const { commentId } = req.params;
+        if (!commentId) {
+            throw new ApiError(404, "CommentId is required for deletion")
         }
-        
-        await Comment.findByIdAndDelete(
-            Comment._id
-        );
-    
+        if (isValidObjectId(commentId)) {
+            throw new ApiError(400, "Invalid COmmenrt ID")
+        }
+        const getComment = await Comment.findById(commentId);
+
+        if (!getComment) {
+            throw new ApiError(404, "COmment not found")
+        }
+
+        if (getComment?.owner.toString() !== req.user?._id.toString()) {
+            throw new ApiError(400, "User is not the owner of this comment");
+        }
+
+        await Comment.findByIdAndDelete(commentId);
+
         return res.status(201)
-        .json(
-            new ApiResponse(201,{},"Comment deleted Successfully")
-        )
+            .json(
+                new ApiResponse(201, {}, "Comment deleted Successfully")
+            )
     } catch (error) {
-        throw new ApiError(500,"Error occured while deleting comment")
+        throw new ApiError(500, "Error occured while deleting comment")
     }
 })
 
