@@ -7,7 +7,7 @@ import {
     deleteComment
 } from "../controllers/comment.controller.js"
 
-import {veriftyJWT} from "../middlewares/auth.middlewares.js"
+import {veriftyJWT} from "../middlewares/auth.middleware.js"
 const router = Router();
 router.use(veriftyJWT);
 
