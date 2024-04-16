@@ -7,8 +7,8 @@ import {asyncHandler} from "../utils/asyncHandler.js"
 
 const createPlaylist = asyncHandler(async (req, res) => {
     try {
-        const {name, description} = req.body
-    
+        const {name, description,videoID} = req.body
+        
         //TODO: create playlist
         if(!name){
             throw new ApiError(400,"Name is required for creating a playlists")
@@ -18,18 +18,21 @@ const createPlaylist = asyncHandler(async (req, res) => {
             throw new ApiError(400,"description is required for creating a playlists")
         }
     
+        // if(!isValidObjectId(videoID)){
+        //     throw new ApiError(404,"Vidoe is required to processed")
+        // }
         const playlist = await Playlist.create({
             name: name,
-            description: description,
-            onwer: User._id,
-            videos: Video._id
+            discription: description,
+            onwer: req.user?._id,
+            videos: videoID
         })
     
         return res.status(200).json(
             new ApiResponse(200,playlist,"Playlist created ")
         )
     } catch (error) {
-        throw new ApiError(500,"Error occur while creating a new playlists")
+        throw new ApiError(500,error.message)
     }
 })
 

@@ -4,7 +4,7 @@ import { User } from "../models/user.model.js"
 import { ApiError } from "../utils/ApiError.js"
 import { ApiResponse } from "../utils/ApiResponse.js"
 import { asyncHandler } from "../utils/asyncHandler.js"
-import { uploadOnCloudinary } from "../utils/cloudinary.js"
+import { uploadOnCloudinary } from "../utils/cloudniray.js"
 
 const verifyVideo = asyncHandler(async (req, res) => {
     const video = await Video.findById(videoId)
@@ -19,36 +19,38 @@ const getAllVideos = asyncHandler(async (req, res) => {
     //TODO: get all videos based on query, sort, pagination
 })
 
-const publishAVideo = asyncHandler(async (req, res) => {
+const publishVideo = asyncHandler(async (req, res) => {
     const { title, description } = req.body
     // TODO: get video, upload to cloudinary, create video
 
     try {
-        const videoPath = req.files.video[0]?.path;
-        const videoThumnailPath = req.files.videoThumbnail[0]?.path;
+        const videoPath = req.files.videoFile[0]?.path;
+        const videoThumnail = req.files.thumbnail[0]?.path;
 
+        //  console.log(videoPath, videoThumnail);
         if (!videoPath) {
             throw new ApiError(404, "Video path is required!!")
         }
-        if (!videoThumnailPath) {
+        if (!videoThumnail) {
             throw new ApiError(404, "Video thumb nail  path is required!!")
         }
 
-        const video = uploadOnCloudinary(videoPath);
-        const thumb = uploadOnCloudinary(videoThumbnail);
+        const video = await uploadOnCloudinary(videoPath);
+        const thumb = await uploadOnCloudinary(videoThumnail);
 
+        // console.log(video,thumb);
         const videos = await Video.create({
-            videoFile: video,
-            thumbnail: thumb,
-            title,
-            description,
+            videoFile: video.url,
+            thumbnail: thumb.url,
+            title:title,
+            description: description,
             duration: 0,
             views: 0,
             isPublished: true,
             owner: req.user?._id
         })
-
-        const createdVideo = await Video.findById(video._id);
+        //  console.log(videos);
+        const createdVideo = await Video.findById(videos._id);
         if (!createdVideo) {
             throw new ApiError(499, "error while uploading new video to db")
         }
@@ -57,7 +59,7 @@ const publishAVideo = asyncHandler(async (req, res) => {
             new ApiResponse(200, createdVideo, "video uploaded successfully to DB and cloudniary")
         )
     } catch (error) {
-        throw new ApiError(500, error?.message || "SOmething went wrong")
+        throw new ApiError(500, error?.message )
     }
 
 })
@@ -103,7 +105,7 @@ const getVideoById = asyncHandler(async (req, res) => {
 
 })
 
-const updateVideo = asyncHandler(async (req, res) => {
+const updateVideoById = asyncHandler(async (req, res) => {
     const { videoId } = req.params
     //TODO: update video details like title, description, thumbnail
     try {
@@ -150,7 +152,7 @@ const updateVideo = asyncHandler(async (req, res) => {
     }
 })
 
-const deleteVideo = asyncHandler(async (req, res) => {
+const deleteVideoById = asyncHandler(async (req, res) => {
     const { videoId } = req.params
     //TODO: delete video
     try {
@@ -193,10 +195,10 @@ const togglePublishStatus = asyncHandler(async (req, res) => {
 
 export {
     getAllVideos,
-    publishAVideo,
+    publishVideo,
     getVideoById,
-    updateVideo,
-    deleteVideo,
+    updateVideoById,
+    deleteVideoById,
     togglePublishStatus,
     verifyVideo
 }
