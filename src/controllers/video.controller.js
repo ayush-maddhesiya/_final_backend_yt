@@ -75,7 +75,7 @@ const getVideoById = asyncHandler(async (req, res) => {
             throw new ApiError(404, "videoId is not valid plzz cheak")
         }
 
-        const video = Video.aggregate([
+        const video = await Video.aggregate([
             {
                 $match: {
                     _id: new mongoose.Types.ObjectId(videoId)
@@ -91,7 +91,12 @@ const getVideoById = asyncHandler(async (req, res) => {
             },
             {
                 $project: {
-                    "owners.fullName": 1
+                    title:1,
+                    description:1,
+                    thumbnail:1,
+                    videoFile:1,
+                    "owners.fullName": 1,
+                    "owners.username": 1
                 }
             }
         ])
