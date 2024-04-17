@@ -1,4 +1,4 @@
-import mongoose, { isValidObjectId } from "mongoose"
+import mongoose, { Types, isValidObjectId } from "mongoose"
 import {Tweet} from "../models/tweet.model.js"
 import {User} from "../models/user.model.js"
 import {ApiError} from "../utils/ApiError.js"
@@ -45,7 +45,7 @@ const getUserTweets = asyncHandler(async (req, res) => {
         const comment = await Tweet.aggregate([
             {
               $match: {
-                owner: ObjectId("65f6a32e27bca06703e310ea") // Assuming owner is an ObjectId
+                owner: new mongoose.Types.ObjectId(user) // Assuming owner is an ObjectId
               }
             },
             {
@@ -74,7 +74,7 @@ const getUserTweets = asyncHandler(async (req, res) => {
             )
     
     } catch (error) {
-        throw new ApiError(500,"Error occured while getting user Tweets")
+        throw new ApiError(500, error?.message)
     }
 })
 
@@ -84,11 +84,16 @@ const updateTweet = asyncHandler(async (req, res) => {
         const {tweetId} = req.params;
         const {content} = req.body;
     
-        if(!(tweetId && content)){
-            throw new ApiError(400,"field required for updations content and tweetID")
+        if(!tweetId){
+            throw new ApiError(400,"field required for updations  tweetID")
         }
+        if(!content){
+            throw new ApiError(400,"field required for updations content ")
+        }
+        console.log(tweetId);
+        console.log(content);
     
-        if(isValidObjectId(tweetId)){
+        if(!isValidObjectId(tweetId)){
             throw new ApiError(400,"Invalid tweet ID ")
         }
         const tweet = await Tweet.findByIdAndUpdate(tweetId,
@@ -96,7 +101,7 @@ const updateTweet = asyncHandler(async (req, res) => {
                 $set:{
                     content: content
                 }
-            },{new: ture});
+            },{new: true});
     
         if(!tweet){
             throw new ApiError(500,"Cannt find and update tweet")
@@ -107,7 +112,7 @@ const updateTweet = asyncHandler(async (req, res) => {
             new ApiResponse(200,tweet,"Tweet updated !!")
         )    
     } catch (error) {
-        throw new ApiError(500,"Cannt update tweet,due to some internal error. ")
+        throw new ApiError(500,error?.message || "some error occurded")
     }
 
 
@@ -116,20 +121,20 @@ const updateTweet = asyncHandler(async (req, res) => {
 const deleteTweet = asyncHandler(async (req, res) => {
     //TODO: delete tweet
     try {
-        const {tweetID} = req.params
-        if(!tweetID){
+        const {tweetId} = req.params
+        if(!tweetId){
             throw new ApiError(400,"tweet id is requierd to deleted")
         }
-        if(isValidObjectId(tweetId)){
+        if(!isValidObjectId(tweetId)){
             throw new ApiError(400,"Invalid tweet ID ")
         }
-        await Tweet.findByIdAndUpdate(tweetID);
+        await Tweet.findByIdAndUpdate(tweetId);
     
         return res.status(200).json(
             new ApiResponse(200,{},"Tweet deleted successfully")
         )
     } catch (error) {
-        throw new ApiError(500,"Cannt deleted  tweet,due to some internal error. ")
+        throw new ApiError(500,error?.message || "Cannt deleted  tweet,due to some internal error. ")
     }
 
 })
