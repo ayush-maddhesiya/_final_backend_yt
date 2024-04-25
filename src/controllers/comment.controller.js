@@ -1,4 +1,4 @@
-import mongoose from "mongoose"
+import mongoose,{isValidObjectId} from "mongoose"
 import { Comment } from "../models/comment.model.js"
 import { ApiError } from "../utils/ApiError.js"
 import { ApiResponse } from "../utils/ApiResponse.js"
@@ -163,16 +163,21 @@ const deleteComment = asyncHandler(async (req, res) => {
         if (!commentId) {
             throw new ApiError(404, "CommentId is required for deletion")
         }
-        if (isValidObjectId(commentId)) {
+        //console.log(commentId,isValidObjectId(commentId));
+        if (!isValidObjectId(commentId)) {
             throw new ApiError(400, "Invalid COmmenrt ID")
         }
         const getComment = await Comment.findById(commentId);
-
+        console.log(getComment.onwer);
         if (!getComment) {
             throw new ApiError(404, "COmment not found")
         }
+        // if (!req.user || !req.user._id) {
+        //     throw new ApiError(400, "User information not available");
+        // }   
+        console.log(getComment?.owner)
 
-        if (getComment?.owner.toString() !== req.user?._id.toString()) {
+        if (getComment?.onwer.toString() !== req.user?._id.toString()) {
             throw new ApiError(400, "User is not the owner of this comment");
         }
 
@@ -183,7 +188,7 @@ const deleteComment = asyncHandler(async (req, res) => {
                 new ApiResponse(201, {}, "Comment deleted Successfully")
             )
     } catch (error) {
-        throw new ApiError(500, "Error occured while deleting comment")
+        throw new ApiError(500, error?.message || "Error occured while deleting comment")
     }
 })
 
