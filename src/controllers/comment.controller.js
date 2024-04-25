@@ -116,7 +116,7 @@ const updateComment = asyncHandler(async (req, res) => {
             throw new ApiError(404, "CommentId is required")
         }
 
-        const { content } = req.body;
+        const {content} = req.body;
 
         if (!content) {
             throw new ApiError(404, "content is required in body")
@@ -128,13 +128,13 @@ const updateComment = asyncHandler(async (req, res) => {
 
         const getComment = await Comment.findById(commentId);
 
-        if (req.user?._id.toString() !== getComment?.owner.toString()) {
+        if (req.user?._id.toString() !== getComment?.onwer.toString()) {
             throw new ApiError(400, "User is not the owner of this comment");
         }
-
-        const uploadComment = Comment.findByIdAndUpdate(commentId,
+        // content.toString();
+        const uploadComment = await Comment.findByIdAndUpdate(commentId,
             {
-                $set: {
+                $set:{
                     content: content
                 }
             }
@@ -150,7 +150,7 @@ const updateComment = asyncHandler(async (req, res) => {
             new ApiResponse(200, uploadComment, "Comment is updated successfully")
         )
     } catch (error) {
-        throw new ApiError(500, "Comment is updated")
+        throw new ApiError(500, error?.message || "Comment is not  updated")
     }
 
 
