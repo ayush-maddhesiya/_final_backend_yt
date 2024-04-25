@@ -6,11 +6,19 @@ import { ApiResponse } from "../utils/ApiResponse.js"
 import { asyncHandler } from "../utils/asyncHandler.js"
 import { uploadOnCloudinary } from "../utils/cloudniray.js"
 
-const verifyVideo = asyncHandler(async (req, res) => {
-    const video = await Video.findById(videoId)
+//allis working fine only patch in not work updatebyID
+
+const verifyVideo = asyncHandler(async (req, res,next) => {
+    console.log("okay  1");
+    const {videoID} = req.params
+    console.log("verify video id okay??",videoID);
+    const video = await Video.findById(videoID)
     if (!video) {
         throw new ApiError(500, "Vidoe is not found in database..")
     }
+    console.log("okay");
+
+    return video;
 })
 
 
@@ -22,12 +30,18 @@ const getAllVideos = asyncHandler(async (req, res) => {
 const publishVideo = asyncHandler(async (req, res) => {
     const { title, description } = req.body
     // TODO: get video, upload to cloudinary, create video
+    //console.log(req.files.thumbnail[0]?.path);
 
     try {
-        const videoPath = req.files.videoFile[0]?.path;
-        const videoThumnail = req.files.thumbnail[0]?.path;
+        const videoPath = req.files?.videoFile[0]?.path;
+        let videoThumbnail;
+if (req.files && req.files.thumbnail && req.files.thumbnail.length > 0 && req.files.thumbnail[0].path) {
+    videoThumbnail = req.files.thumbnail[0].path;
+}
 
-        //  console.log(videoPath, videoThumnail);
+        const videoThumnail = req.files?.thumbnail[0]?.path;
+        // console.log(req.files.thumbnail[0]?.path);
+         console.log(videoPath, videoThumnail);
         if (!videoPath) {
             throw new ApiError(404, "Video path is required!!")
         }
@@ -37,7 +51,7 @@ const publishVideo = asyncHandler(async (req, res) => {
 
         const video = await uploadOnCloudinary(videoPath);
         const thumb = await uploadOnCloudinary(videoThumnail);
-
+        console.log(thumb);
         // console.log(video,thumb);
         const videos = await Video.create({
             videoFile: video.url,
@@ -117,20 +131,27 @@ const updateVideoById = asyncHandler(async (req, res) => {
         if (!videoId) {
             throw new ApiError(404, "videoId is required")
         }
+        // console.log(videoId);
         if (!isValidObjectId(videoId)) {
             throw new ApiError(404, "videoId is not valid plzz cheak")
         }
-        const { title, description } = req.body();
+        const { title, description } = req.body;
 
-        if (!(title && description)) {
+        if (!title ) {
             throw new ApiError(404, "title && description is required")
         }
 
-        const thumbnail = req.files?.thumbnail[0].path
-        if (!thumbnail) {
+        if (!description ) {
+            throw new ApiError(404, "title && description is required")
+        }
+         //console.log(req.files?.thumbnail[0]?.path);
+        const newthumbnail = req.files?.thumbnail[0]?.path ;
+        if (!newthumbnail) {
             throw new ApiError(404, "thumbnail path is required to updated")
         }
 
+        const tty = await uploadOnCloudinary(newthumbnail);
+       // console.log(newthumbnail.url);
         //verification is required i guess ,soo that only user can update only this video only 
         const userId = req.user.id; // Assuming you have user information in the request object
 
@@ -139,19 +160,23 @@ const updateVideoById = asyncHandler(async (req, res) => {
         if (!video) {
             throw new ApiError(404, "Video not found");
         }
-        if (video.userId.toString() !== userId) {
+        if (video.owner.toString() !== userId.toString()) {
             throw new ApiError(403, "You are not authorized to update this video");
         }
 
-        const updateVideos = Video.findByIdAndUpdate(videoId,
+        const updateVideos = await Video.findByIdAndUpdate(videoId,
             {
                 $set: {
                     title: title,
                     description: description,
-                    thumbnail: thumbnail
+                    thumbnail: tty.url
                 }
             }
             , { new: true })
+
+        return res.status(200).json(
+            new ApiResponse(201,updateVideos,"scusedully")
+        )
     } catch (error) {
         throw new ApiError(500, error?.message || "error while updating some video")
     }
@@ -169,14 +194,16 @@ const deleteVideoById = asyncHandler(async (req, res) => {
         }
     
         //verification is required i guess ,soo that only user can update only this video only 
-        const userId = req.user.id; // Assuming you have user information in the request object
+        const userId = req.user._id; // Assuming you have user information in the request object
     
         // Check if the video belongs to the user
         const video = await Video.findById(videoId);
         if (!video) {
             throw new ApiError(404, "Video not found");
         }
-        if (video.userId.toString() !== userId) {
+        // console.log(video.owner);
+        // console.log(userId);
+        if (video.owner?.toString() !== userId.toString()) {
             throw new ApiError(403, "You are not authorized to update this video");
         }
     

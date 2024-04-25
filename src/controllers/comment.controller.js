@@ -67,42 +67,45 @@ const getVideoComments = asyncHandler(async (req, res) => {
 
 })
 
-const addComment = asyncHandler(async (req, res) => {
-    // TODO: add a comment to a video
-    // get a comment form body || url
-    //to which video || tweet you want to comment
-    //link to that
-    //post the comment
-    try {
-        const { videoId } = req.params;
-        const { content } = req.body;
-        
-        const video = verifyVideo(videoId);
+    const addComment = asyncHandler(async (req, res) => {
+        // TODO: add a comment to a video
+        // get a comment form body || url
+        //to which video || tweet you want to comment
+        //link to that
+        //post the comment
+        try {
 
-        if (!video) {
-            throw new ApiError(500, " Video cannt be fetched while adding comment."
+            const { videoID } = req.params;
+            console.log(videoID);
+            const { content } = req.body;
+            console.log(content);
+        
+            const video = await verifyVideo(req,res);
+            console.log(video,"video from vertiy vedio")
+            if (video) {
+                throw new ApiError(500, " Video cannt be fetched while adding comment."
+                )
+            }
+
+            if (!content) {
+                throw new ApiError(400, "Comment is Required!!")
+            }
+
+
+            const comment = await Comment.create({
+                content,
+                video: videoID,
+                onwer: req.user?._id
+            })
+
+            return res.status(200).json(
+                new ApiResponse(200, comment, "Comment added successfully!")
             )
         }
-
-        if (!content) {
-            throw new ApiError(400, "Comment is Required!!")
+        catch (error) {
+            throw new ApiError(500, error?.message)
         }
-
-
-        const comment = await Comment.create({
-            content,
-            video: videoId,
-            onwer: req.user?._id
-        })
-
-        return res.status(200).json(
-            new ApiResponse(200, comment, "Comment added successfully!")
-        )
     }
-    catch (error) {
-        throw new ApiError(500, "Error Occuered while adding Comment")
-    }
-}
 )
 const updateComment = asyncHandler(async (req, res) => {
     // TODO: update a comment
