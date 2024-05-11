@@ -26,7 +26,7 @@ const getAllVideos = asyncHandler(async (req, res) => {
     const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query
     //TODO: get all videos based on query, sort, pagination
 })
-
+//this is done and working fine........
 const publishVideo = asyncHandler(async (req, res) => {
     const { title, description } = req.body
     // TODO: get video, upload to cloudinary, create video
@@ -78,6 +78,7 @@ if (req.files && req.files.thumbnail && req.files.thumbnail.length > 0 && req.fi
 
 })
 
+//this is working fine
 const getVideoById = asyncHandler(async (req, res) => {
     const { videoId } = req.params
     //TODO: get video by id
@@ -88,7 +89,7 @@ const getVideoById = asyncHandler(async (req, res) => {
         if (!isValidObjectId(videoId)) {
             throw new ApiError(404, "videoId is not valid plzz cheak")
         }
-
+        
         const video = await Video.aggregate([
             {
                 $match: {
@@ -124,8 +125,11 @@ const getVideoById = asyncHandler(async (req, res) => {
 
 })
 
+//this not working , Error: thumbnail path is required to updated
 const updateVideoById = asyncHandler(async (req, res) => {
     const { videoId } = req.params
+    const newthumbnail = req.files?.thumbnail[0]?.path ;
+    //console.log(thumbnail);
     //TODO: update video details like title, description, thumbnail
     try {
         if (!videoId) {
@@ -144,8 +148,8 @@ const updateVideoById = asyncHandler(async (req, res) => {
         if (!description ) {
             throw new ApiError(404, "title && description is required")
         }
-         //console.log(req.files?.thumbnail[0]?.path);
-        const newthumbnail = req.files?.thumbnail[0]?.path ;
+         //console.log(req.files?.thumbnail[0]?.path ," ", req.files?.thumbnail[0]);
+        //const newthumbnail = req.files?.thumbnail[0]?.path ;
         if (!newthumbnail) {
             throw new ApiError(404, "thumbnail path is required to updated")
         }
@@ -182,6 +186,7 @@ const updateVideoById = asyncHandler(async (req, res) => {
     }
 })
 
+//this is working fine
 const deleteVideoById = asyncHandler(async (req, res) => {
     const { videoId } = req.params
     //TODO: delete video
@@ -219,10 +224,33 @@ const deleteVideoById = asyncHandler(async (req, res) => {
 
 })
 
+//this is fine , working
 const togglePublishStatus = asyncHandler(async (req, res) => {
     const { videoId } = req.params
 
+    if (!isValidObjectId(videoId)) {
+        throw new ApiError(400, "Invalid Video ID");
+    }
+
+    const video = await Video.findById(videoId)
+    const togglePublish = await Video.findByIdAndUpdate(videoId,
+        {
+            $set:{
+                isPublished: !video.isPublished
+            }
+        },
+        { new: true }
+    )
     
+    if (!togglePublish) {
+        throw new ApiError(400, " do not toggled on this , successfully");
+    }
+
+    
+    return res.status(200).json(
+        new ApiResponse(200,togglePublish, "video IS TOGGLED ")
+    )
+
 })
 
 export {
