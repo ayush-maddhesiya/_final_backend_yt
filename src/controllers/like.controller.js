@@ -3,11 +3,16 @@ import {Likes} from "../models/like.model.js"
 import {ApiError} from "../utils/ApiError.js"
 import {ApiResponse} from "../utils/ApiResponse.js"
 import {asyncHandler} from "../utils/asyncHandler.js"
+import { User } from "../models/user.model.js"
+
 
 const toggleVideoLike = asyncHandler(async (req, res) => {
     const {videoId} = req.params
     //TODO: toggle like on video
-    const {userId} = req.User
+    const userId = req.user?._id
+
+    
+    //console.log(req.user._id);
     if (!videoId) {
         throw new ApiError(400,"videoId is not found ")
     }
@@ -35,7 +40,7 @@ const toggleVideoLike = asyncHandler(async (req, res) => {
 const toggleCommentLike = asyncHandler(async (req, res) => {
     const {commentId} = req.params
     //TODO: toggle like on comment
-    const {userId} = req.User
+    const userId = req.user._id
     try {
         const existsLike = await Likes.findOne({comment: commentId,likedBy:userId});
         if(existsLike){
@@ -57,15 +62,15 @@ const toggleCommentLike = asyncHandler(async (req, res) => {
 const toggleTweetLike = asyncHandler(async (req, res) => {
     const {tweetId} = req.params
     //TODO: toggle like on tweet
-    const {userId} = req.User
+    const userId = req.user._id
     try {
         const existsLike = await Likes.findOne({tweet: tweetId ,likedBy:userId});
         if(existsLike){
-            await Likes.findOneAndDelete({weet: tweetId ,likedBy:userId});
+            await Likes.findOneAndDelete({tweet: tweetId ,likedBy:userId});
             return res.status(200).json(new ApiResponse(200,existsLike,"Like remove from tweet"))
         }
         else{
-            await Likes.create({weet: tweetId ,likedBy:userId});
+            await Likes.create({tweet: tweetId ,likedBy:userId});
             return res.status(200).json(new ApiResponse(200,existsLike,"Like added to tweet"))
         }
     
