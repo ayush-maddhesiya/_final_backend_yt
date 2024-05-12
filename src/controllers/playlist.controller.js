@@ -56,17 +56,20 @@ const getUserPlaylists = asyncHandler(async (req, res) => {
 const getPlaylistById = asyncHandler(async (req, res) => {
    try {
      const {playlistId} = req.params
+     if(!isValidObjectId(playlistId)){
+        throw new ApiError(400,"this is not valid Playlist ID")
+    }
      //TODO: get playlist by id
-     const playlist = await Playlist.findbyId(playlistId)
+     const playlist = await Playlist.findById(playlistId)
      if (!playlist) {
          throw new ApiError(404,"Not playlist found!!!!!!!")
      }
- 
+     console.log(playlist);
      return res.status(200).json(
          new ApiResponse(200,playlist,"Playlist fetched succesfully !")
      )
    } catch (error) {
-    throw new ApiError(500," Playlist not fetched succesfully  Id !")
+    throw new ApiError(500,   error?.message || " Playlist not fetched succesfully  Id !")
    }
 
 })
@@ -118,7 +121,9 @@ const deletePlaylist = asyncHandler(async (req, res) => {
     try {
         const {playlistId} = req.params
         // TODO: delete playlist
-    
+        if(!isValidObjectId(playlistId)){
+            throw new ApiError(400,"this is not valid Playlist ID")
+        }
         const play = await Playlist.findByIdAndDelete(playlistId);
     
         return res.status(200).json(
@@ -134,7 +139,9 @@ const updatePlaylist = asyncHandler(async (req, res) => {
     const {playlistId} = req.params
     const {name, description} = req.body
     //TODO: update playlist
-
+    if(!isValidObjectId(playlistId)){
+        throw new ApiError(400,"this is not valid Playlist ID")
+    }
     try {
         const playlist = await Playlist.findByIdAndUpdate(playlistId,{
             $set:{
