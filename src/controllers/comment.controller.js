@@ -8,62 +8,72 @@ import { Video } from "../models/video.model.js"
 import { verifyVideo } from "./video.controller.js"
 
 
+
 const getVideoComments = asyncHandler(async (req, res) => {
     //TODO: get all comments for a video
-    
-    const { videoId } = req.params;
+    const {videoID} = req.params
     const { page = 1, limit = 10 } = req.query;
 
-    if(!videoId){
-        throw new ApiError(404,"Please provide a valid video Id")
-    }
-
-    const getComment  = await Comment.aggregate([
-        {
-            $match:{
-                video:new mongoose.Types.ObjectId(videoId)
+    await verifyVideo(req,res);
+    
+    let getComment;
+    try {
+        getComment  = await Comment.aggregate([
+            {
+                $match:{
+                    video:new mongoose.Types.ObjectId(videoID)
+                },
             },
-        },
-        {
-            $lookup: {
-              from: "users",
-              localField: "owner",
-              foreignField: "_id",
-              as: "owners",
-            },
-          },
-          {
-            $lookup: {
-              from: "likes",
-              localField: "_id",
-              foreignField: "comment",
-              as: "likes",
-            },
-          },
-          {
-            $addFields: {
-              likesCount: {
-                $size: "$likes",
-              },
-              owner: {
-                // $arrayEleAt: ["$owners", 0],
-                //   alternative
-                  $first:"$owners",
-              },
-              isLiked: {
-                $cond: {
-                  if: {
-                    $in: [req.user?._id, "$likes.likedBy"],
-                  },
-                  then: true,
-                  else: false,
+            {
+                $lookup: {
+                  from: "users",
+                  localField: "onwer",
+                  foreignField: "_id",
+                  as: "ownerdetails",
                 },
               },
-            },
-          },
-]);
+              {
+                $lookup: {
+                  from: "likes",
+                  localField: "_id",
+                  foreignField: "comment",
+                  as: "likes",
+                },
+              },
+              {
+                $addFields: {
+                  likesCount: {
+                    $size: "$likes",
+                  },
+                  isLiked: {
+                    $cond: {
+                      if: {
+                        $in: [req.user?._id, "$likes.likedBy"],
+                      },
+                      then: true,
+                      else: false,
+                    },
+                  },
+                },
+              },
+              {
+                $project:{
+                    _id:1,
+                    content:1,
+                    "ownerdetails.fullName" : 1,
+                    isLiked: 1
+                }
+              }
+    ]);
 
+    console.log(getComment)
+    } catch (error) {
+        throw new ApiError(400,"error while getting the details")
+    }
 
+return res.status(200).json(
+    new ApiResponse(200, getComment, "Comment fetched successfully!")
+)
 
 })
 
@@ -76,16 +86,12 @@ const getVideoComments = asyncHandler(async (req, res) => {
         try {
 
             const { videoID } = req.params;
-            console.log(videoID);
+            // console.log(videoID);
             const { content } = req.body;
-            console.log(content);
+            // console.log(content);
         
             const video = await verifyVideo(req,res);
-            console.log(video,"video from vertiy vedio")
-            if (video) {
-                throw new ApiError(500, " Video cannt be fetched while adding comment."
-                )
-            }
+            // console.log(video,"video from vertiy video")
 
             if (!content) {
                 throw new ApiError(400, "Comment is Required!!")
@@ -101,6 +107,7 @@ const getVideoComments = asyncHandler(async (req, res) => {
             return res.status(200).json(
                 new ApiResponse(200, comment, "Comment added successfully!")
             )
+
         }
         catch (error) {
             throw new ApiError(500, error?.message)
@@ -196,5 +203,5 @@ export {
     getVideoComments,
     addComment,
     updateComment,
-    deleteComment
+    deleteComment,
 }

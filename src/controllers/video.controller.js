@@ -9,14 +9,14 @@ import { uploadOnCloudinary } from "../utils/cloudniray.js"
 //allis working fine only patch in not work updatebyID
 
 const verifyVideo = asyncHandler(async (req, res,next) => {
-    console.log("okay  1");
+    // console.log("okay  1");
     const {videoID} = req.params
-    console.log("verify video id okay??",videoID);
+    // console.log("verify video id okay??",videoID);
     const video = await Video.findById(videoID)
     if (!video) {
         throw new ApiError(500, "Vidoe is not found in database..")
     }
-    console.log("okay");
+    // console.log("okay");
 
     return video;
 })

@@ -4,7 +4,7 @@ import {
     addComment,
     getVideoComments,
     updateComment,
-    deleteComment
+    deleteComment,
 } from "../controllers/comment.controller.js"
 
 import {veriftyJWT} from "../middlewares/auth.middleware.js"
