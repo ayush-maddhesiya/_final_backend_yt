@@ -23,9 +23,10 @@ import commentRouter from "./routes/comment.router.js"
 import likeRouter from "./routes/like.router.js"
 import dashboardRouter from "./routes/dashboard.router.js"
 import subscriptionRouter from "./routes/subscription.routes.js"
+import healthcheckRouter from "./routes/heathcheak.router.js"
 
 //router declartion:
-// app.use("/api/v1/healthcheck", healthcheckRouter)
+app.use("/api/v1/healthcheck", healthcheckRouter)
 app.use("/api/v1/users",userRoute)
 app.use("/api/v1/tweets", tweetRouter)
 app.use("/api/v1/subscriptions", subscriptionRouter)
