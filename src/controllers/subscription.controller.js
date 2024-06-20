@@ -39,9 +39,30 @@ const getUserChannelSubscribers = asyncHandler(async (req, res) => {
         if(!channelId  && isValidObjectId(channelId)){
             throw new ApiError(404,"Channel id is required")
         }
-        const channelLists = await Subscription.find({"channel":"channelId"})
+        const channelLists = await Subscription.aggregate(
+            [
+                { 
+                  $match: {
+                    channel: new mongoose.Types.ObjectId(channelId)
+                  }
+                },
+                {
+                  $group: {
+                    _id: '$channel',
+                    numberOfUserWhomSubcribedToYou: { 
+                      $sum: 1 
+                    }
+                  }
+                },
+                {
+                   $project:{
+                    numberOfUserWhomSubcribedToYou:1
+                    }
+                }
+              ]
+        )
         // console.log(channelId);
-    
+        console.log(channelLists);
         if(!channelLists){
             throw new ApiError(502,"no able to find any subcriber or not single one exist thier")
         }
@@ -62,7 +83,26 @@ const getSubscribedChannels = asyncHandler(async (req, res) => {
         if(!subscriberId  && isValidObjectId(subscriberId)){
             throw new ApiError(404,"Channel id is required")
         }
-        const userLists = await Subscription.find({"subcriber":"subscriberId"})
+        const userLists = await Subscription.aggregate([
+            { 
+              $match: {
+                subcriber: new mongoose.Types.ObjectId(subscriberId)
+              }
+            },
+            {
+              $group: {
+                _id: '$subcriber',
+                numberOfChannelToWhichYouSubcribed: { 
+                  $sum: 1 
+                }
+              }
+            },
+            {
+                $project:{
+                    numberOfChannelToWhichYouSubcribed:1
+                }
+            }
+          ])
         // console.log(channelId);
     
         if(!subscriberId){

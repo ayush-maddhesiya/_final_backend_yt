@@ -11,5 +11,6 @@ router.use(veriftyJWT); // Apply verifyJWT middleware to all routes in this file
 
 router.route("/stats").get(getChannelStats);
 router.route("/videos").get(getChannelVideos);
+router.route("/homepage").get(getChannelVideos);
 
 export default router
